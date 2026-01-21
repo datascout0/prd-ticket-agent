@@ -3,11 +3,11 @@ import { NextResponse } from "next/server";
 import * as mammoth from "mammoth";
 
 // pdfjs-dist legacy build works best in Next.js (server runtime)
-import {
-  GlobalWorkerOptions,
-  getDocument,
-  type TextItem,
-} from "pdfjs-dist/legacy/build/pdf.mjs";
+import { GlobalWorkerOptions, getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+
+// NOTE (Vercel build fix):
+// Some pdfjs-dist versions do not export the TextItem type from this path.
+// Avoid importing TextItem and treat content items as `any[]` instead.
 
 // Tell PDF.js where the worker lives (avoids "Setting up fake worker failed")
 GlobalWorkerOptions.workerSrc = new URL(
@@ -48,7 +48,6 @@ async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
 
   const loadingTask = getDocument({
     data,
-    disableWorker: false, // workerSrc is set above
   });
 
   const doc = await loadingTask.promise;
@@ -60,8 +59,9 @@ async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
 
-    const pageText = (content.items as TextItem[])
-      .map((it: any) => (typeof it?.str === "string" ? it.str : ""))
+    const items = (content.items as any[]) || [];
+    const pageText = items
+      .map((it) => (typeof it?.str === "string" ? it.str : ""))
       .filter(Boolean)
       .join(" ");
 
@@ -78,10 +78,7 @@ export async function POST(req: Request) {
     const file = form.get("file");
 
     if (!file || !(file instanceof File)) {
-      return NextResponse.json(
-        { message: "No file uploaded" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "No file uploaded" }, { status: 400 });
     }
 
     const name = file.name || "upload";
