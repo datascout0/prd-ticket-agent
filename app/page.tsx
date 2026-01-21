@@ -87,8 +87,7 @@ Non-goals
 Release Date
 End of Q1 2025`
 
-type CopyId = 'json' | 'markdown' | `ticket:${string}` | 'linearLinks'
-
+type CopyId = 'json' | 'markdown' | `ticket:${string}`
 
 function confidenceLabel(score: number) {
   if (score >= 85) return 'High'
@@ -102,13 +101,6 @@ function confidenceColor(score: number) {
   if (score >= 70) return 'border-sky-200 bg-sky-50 text-sky-900'
   if (score >= 50) return 'border-amber-200 bg-amber-50 text-amber-900'
   return 'border-rose-200 bg-rose-50 text-rose-900'
-}
-
-function confidenceRange(score: number) {
-  if (score >= 85) return '85–100'
-  if (score >= 70) return '70–84'
-  if (score >= 50) return '50–69'
-  return '0–49'
 }
 
 function priorityPill(priority: Ticket['priority']) {
@@ -173,6 +165,7 @@ export default function PrdPage() {
   const [targetUser, setTargetUser] = useState('')
   const [platform, setPlatform] = useState<'web' | 'mobile' | 'api' | 'other'>('web')
   const [constraints, setConstraints] = useState('')
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const [releaseDate, setReleaseDate] = useState('')
 
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
@@ -330,12 +323,12 @@ export default function PrdPage() {
         <div className="mb-8">
           <div className="mb-2 flex items-center gap-3">
             <Sparkles className="h-8 w-8 text-blue-600" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              PRD ➜ Tickets Agent
+            <h1 className="inline-block text-4xl font-bold tracking-tight leading-[1.15] pb-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              PRD → Tickets
             </h1>
           </div>
-          <p className="text-muted-foreground font-bold">
-            Turn PRDs (Product Requirements Documents) into implementation-ready tickets with acceptance criteria, QA, and analytics.
+          <p className="text-muted-foreground">
+            Turn PRDs into implementation-ready tickets with acceptance criteria, QA, and analytics.
           </p>
         </div>
 
@@ -421,15 +414,33 @@ export default function PrdPage() {
 
 
                 <Textarea
-  value={prd}
-  onChange={(e) => setPrd(e.target.value)}
-  className="h-[320px] resize-none overflow-y-auto"
-  rows={14}
-/>
+                  placeholder="Paste your PRD here..."
+                  value={prd}
+                  onChange={(e) => setPrd(e.target.value)}
+                  className="min-h-[220px] bg-white"
+                />
 
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-between bg-white/70 active:scale-[0.99] transition"
+                    onClick={() => setShowAdvanced((v) => !v)}
+                  >
+                    <span className="text-sm">
+                      {showAdvanced ? "Hide optional fields" : "Show optional fields"}
+                    </span>
+                    {showAdvanced ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
 
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {showAdvanced && (
+                  <div className="mt-3 space-y-4">
+<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="space-y-1">
                     <label className="text-sm font-medium">Product Name</label>
                     <Input value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Optional" />
@@ -468,72 +479,73 @@ export default function PrdPage() {
                     />
                   </div>
                 </div>
+                  </div>
+                )}
 
-                <Separator />
+<Separator />
 
                 <div className="space-y-2">
-  {/* Generate + Clear row */}
-  <div className="flex gap-2">
-    <Button
-      onClick={handleGenerate}
-      disabled={!canGenerate || loading}
-      className="flex-[4] bg-emerald-500 hover:bg-emerald-700 text-white active:scale-[0.99] transition"
-    >
-      {loading ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Generating...
-        </>
-      ) : (
-        <>
-          <Wand2 className="mr-2 h-4 w-4" />
-          Generate Tickets
-        </>
-      )}
-    </Button>
+                  <div className="grid grid-cols-5 gap-2">
+                    <Button
+                      onClick={handleGenerate}
+                      disabled={loading || !canGenerate}
+                      className="col-span-4 bg-emerald-600 text-white hover:bg-emerald-700 active:scale-[0.99] transition"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="mr-2 h-4 w-4" />
+                          Generate Tickets
+                        </>
+                      )}
+                    </Button>
 
-    <Button
-      variant="outline"
-      onClick={handleClear}
-      className="flex-1 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 active:scale-[0.99] transition"
-      disabled={loading}
-    >
-      <Trash2 className="mr-2 h-4 w-4" />
-      Clear
-    </Button>
-  </div>
+                    <Button
+                      variant="outline"
+                      onClick={handleClear}
+                      disabled={loading || (!prd.trim() && !uploadedFileName)}
+                      className="col-span-1 border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 active:scale-[0.99] transition"
+                      title="Clear"
+                    >
+                      <Trash2 className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Clear</span>
+                    </Button>
+                  </div>
 
-  {/* Sample PRDs row */}
-  <div className="grid grid-cols-2 gap-2">
-    <Button
-      variant="outline"
-      onClick={() => loadSample(SAMPLE_PRD_1)}
-      disabled={loading}
-      className="active:scale-[0.99] transition"
-    >
-      Sample: AI Tutor
-    </Button>
-    <Button
-      variant="outline"
-      onClick={() => loadSample(SAMPLE_PRD_2)}
-      disabled={loading}
-      className="active:scale-[0.99] transition"
-    >
-      Sample: Support Triage
-    </Button>
-  </div>
+                  {!canGenerate && prd.trim().length > 0 && (
+                    <p className="text-xs text-destructive">PRD must be at least 20 characters.</p>
+                  )}
 
-  {!canGenerate && prd.trim().length > 0 && (
-    <p className="text-xs text-destructive">PRD must be at least 20 characters.</p>
-  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => loadSample(SAMPLE_PRD_1)}
+                      disabled={loading}
+                      className="active:scale-[0.99] transition"
+                    >
+                      Sample: AI Tutor
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => loadSample(SAMPLE_PRD_2)}
+                      disabled={loading}
+                      className="active:scale-[0.99] transition"
+                    >
+                      Sample: Support Triage
+                    </Button>
+                  </div>
 
-  {error && (
-    <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-      <AlertCircle className="mt-0.5 h-4 w-4" />
-      <div className="flex-1">{error}</div>
-    </div>
-  )}
-</div>
+                  {error && (
+                    <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                      <AlertCircle className="mt-0.5 h-4 w-4" />
+                      <div className="flex-1">{error}</div>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -542,7 +554,7 @@ export default function PrdPage() {
           <div className="space-y-4">
             {!plan && !loading && (
               <Card className="bg-white/80 backdrop-blur-sm">
-                <CardContent className="flex min-h-[540px] flex-col items-center justify-center gap-3 pt-6 text-center">
+                <CardContent className="flex h-[420px] flex-col items-center justify-center gap-3 p-6 text-center">
                   <Sparkles className="h-14 w-14 text-muted-foreground/30" />
                   <div>
                     <p className="text-sm text-muted-foreground">Enter a PRD and generate a plan to see results here.</p>
@@ -597,9 +609,8 @@ export default function PrdPage() {
                       ].join(' ')}
                     >
                       <span>
-                      Confidence {confidenceRange(plan.meta.confidence)} · {confidenceLabel(plan.meta.confidence)}
+                        Confidence {plan.meta.confidence}/100 · {confidenceLabel(plan.meta.confidence)}
                       </span>
-
                       {showConfidence ? <ChevronUp className="h-4 w-4 opacity-70" /> : <ChevronDown className="h-4 w-4 opacity-70" />}
                     </button>
                   </div>
@@ -940,35 +951,9 @@ export default function PrdPage() {
                             </Button>
 
                             <Separator />
-                            <Button
-  variant="outline"
-  className="w-full active:scale-[0.99] transition bg-white/70"
-  onClick={() => {
-    const text = plan.exports.linear
-      .map((l) => `${l.ticketId} - ${l.linearNewUrl}`)
-      .join("\n")
-    copyToClipboard(text, "linearLinks")
-  }}
->
-  {copyId === "linearLinks" ? (
-    <>
-      <Check className="mr-2 h-4 w-4" />
-      Copied Linear links
-    </>
-  ) : (
-    <>
-      <Copy className="mr-2 h-4 w-4" />
-      Copy all Linear links
-    </>
-  )}
-</Button>
 
                             <div className="space-y-2">
-                              <div className="text-sm font-semibold">Create tickets in Linear (bulk)</div>
-                              <div className="text-xs text-muted-foreground">
-                                Opens pre-filled issue drafts so you can create your backlog in minutes
-                                </div>
-
+                              <div className="text-sm font-semibold">Linear quick links</div>
                               <div className="space-y-1">
                                 {plan.exports.linear.map((l) => (
                                   <a
