@@ -17,7 +17,7 @@ const PlanRequestSchema = z.object({
 
 // Prefer setting GROQ_MODEL in .env.local.
 // Pick a model that supports structured outputs (json_schema) in Groq.
-const MODEL_ID = process.env.GROQ_MODEL ?? "moonshotai/kimi-k2-instruct-0905";
+const MODEL_ID = process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
 
 function cleanPrdText(raw: string) {
   let s = raw ?? "";
