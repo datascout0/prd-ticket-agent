@@ -15,9 +15,11 @@ const PlanRequestSchema = z.object({
   releaseDate: z.string().optional(),
 });
 
-// Prefer setting GROQ_MODEL in .env.local.
-// Pick a model that supports structured outputs (json_schema) in Groq.
-const MODEL_ID = process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
+// Prefer setting GROQ_MODEL_ID in .env.local.
+// meta-llama/llama-4-scout-17b-16e-instruct was deprecated by Groq (June 17, 2026).
+// openai/gpt-oss-120b is Groq's recommended replacement and supports
+// structured outputs (json_schema), which Output.object(...) relies on below.
+const MODEL_ID = process.env.GROQ_MODEL_ID ?? "openai/gpt-oss-120b";
 
 function cleanPrdText(raw: string) {
   let s = raw ?? "";
@@ -138,12 +140,25 @@ ${cleanedPrd}
 `.trim();
 }
 
+// Reasoning models spend part of their token budget "thinking" before they
+// write the JSON. If maxOutputTokens is too low (or unset), that reasoning
+// can consume the whole budget and leave nothing for the actual object —
+// which surfaces as "does not validate with /required: missing properties".
+const MAX_OUTPUT_TOKENS = Number(process.env.GROQ_MAX_TOKENS) || 6000;
+
 async function generatePlanObject(prompt: string, temperature: number) {
   return await generateText({
     model: groq(MODEL_ID),
     temperature,
     prompt,
     output: Output.object({ schema: PlanCoreSchema }),
+    maxOutputTokens: MAX_OUTPUT_TOKENS,
+    providerOptions: {
+      groq: {
+        // low keeps more of the token budget available for the JSON itself
+        reasoningEffort: "low",
+      },
+    },
   });
 }
 
